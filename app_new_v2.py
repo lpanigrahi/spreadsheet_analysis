@@ -64,7 +64,7 @@ summary_prompt = """ using python tool, do a detailed analysis of this dataframe
 
 
 def main():
-    load_dotenv()
+    # load_dotenv()
     # search = GoogleSearchAPIWrapper()
 
 
