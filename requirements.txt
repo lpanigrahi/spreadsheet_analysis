@@ -3,3 +3,5 @@ openai
 pandas
 numpy
 matplotlib
+langchain
+langchain_experimental
