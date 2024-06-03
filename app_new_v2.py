@@ -1,7 +1,6 @@
 
 from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain.llms import OpenAI
-# from dotenv import load_dotenv
 import streamlit as st
 import pandas as pd
 import json
@@ -14,7 +13,6 @@ from langchain.output_parsers import StructuredOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
 import re
-import spacy
 from keywords import keywords
 nlp = spacy.load('en_core_web_lg')
 
