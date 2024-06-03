@@ -1,7 +1,7 @@
 
 from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain.llms import OpenAI
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import streamlit as st
 import pandas as pd
 import json
