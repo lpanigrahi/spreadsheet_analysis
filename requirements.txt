@@ -6,3 +6,4 @@ matplotlib
 langchain
 langchain_experimental
 openpyxl
+tabulate
