@@ -50,14 +50,14 @@ summary_prompt = """ using python tool, do a detailed analysis of this dataframe
             Correlation matrix showing relationships between numerical columns. \
             Identification of any significant correlations and potential multicollinearity issues.\
          4. Categorical Data Analysis: \
-            Frequency distribution of categorical variables and it's values\
+            Frequency distribution of categorical variables \
             Analysis of categorical data relationships and associations.\
          5. Time Series Analysis (if applicable): \
             Trend analysis, seasonality, and cyclic patterns for time-based data.\
          7. Key Insights and Recommendations: \
             Highlight any significant findings or patterns. \
             Provide actionable recommendations based on the analysis. \
-        Please ensure the analysis is thorough and presented in a clear and tabular format and don't generate any graphs \
+        Please ensure the analysis is thorough and presented in a clear and tabular format and having a comprehensive meaning \
 """
 
 
