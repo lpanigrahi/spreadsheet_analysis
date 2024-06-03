@@ -41,7 +41,7 @@ summary_prompt = """ using python tool, do a detailed analysis of this dataframe
 
          1. Descriptive Statistics: \
             Summary statistics for each column (mean, median, mode, standard deviation, etc.). \
-            Distribution of values in each column (e.g., histograms, box plots). \
+            Distribution of values in each column . \
          2. Data Quality: \
             Identification of missing values, if any. \
             Detection of outliers and anomalies. \
@@ -50,7 +50,7 @@ summary_prompt = """ using python tool, do a detailed analysis of this dataframe
             Correlation matrix showing relationships between numerical columns. \
             Identification of any significant correlations and potential multicollinearity issues.\
          4. Categorical Data Analysis: \
-            Frequency distribution of categorical variables.\
+            Frequency distribution of categorical variables and it's values\
             Analysis of categorical data relationships and associations.\
          5. Time Series Analysis (if applicable): \
             Trend analysis, seasonality, and cyclic patterns for time-based data.\
