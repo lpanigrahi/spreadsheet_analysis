@@ -15,7 +15,7 @@ from langchain.chat_models import ChatOpenAI
 
 import matplotlib.pyplot as plt
 from langchain.agents.agent_types import AgentType
-os.environ["OPENAI_API_KEY"] = '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'
+os.environ["OPENAI_API_KEY"] = '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'
 
 import shutil
 import sys
