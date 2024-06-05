@@ -29,7 +29,7 @@ def get_spreadsheet_summary(df, query):
     df,
     verbose=True,
     agent_type=AgentType.OPENAI_FUNCTIONS,
-    max_execution_time=2000,
+    max_execution_time=1000,
     handle_parsing_errors= True
     )
     return agent.run(query)
@@ -54,7 +54,7 @@ summary_prompt = """ using python tool, do a detailed analysis of this dataframe
          7. Key Insights and Recommendations: \
             Highlight any significant findings or patterns. \
             Provide actionable recommendations based on the analysis. \
-        Please ensure the analysis is thorough and presented in a clear and tabular format and having a comprehensive meaning \
+        Please ensure the analysis is thorough and presented in a clear and tabular format and having a comprehensive meaning.
 """
 
 
