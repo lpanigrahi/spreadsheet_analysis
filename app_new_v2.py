@@ -29,7 +29,7 @@ def get_spreadsheet_summary(df, query):
     df,
     verbose=True,
     agent_type=AgentType.OPENAI_FUNCTIONS,
-    max_execution_time=2000,
+    max_execution_time=20000,
     handle_parsing_errors= True
     )
     return agent.run(query)
