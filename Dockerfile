@@ -1,5 +1,5 @@
 # The builder image, used to build the virtual environment
-FROM python:3.11-buster as builder
+FROM python:3.10-slim-bullseye
  
 RUN apt-get update && apt-get install -y git
  
