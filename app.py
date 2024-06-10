@@ -1,14 +1,17 @@
 #Spreadsheet Analyzer
-from langchain_experimental.agents import create_pandas_dataframe_agent
-from dotenv import load_dotenv
-import streamlit as st
-import pandas as pd
+import re
+import shutil
+import sys
+import tempfile
+import pathlib
 import json
 import os
-from langchain.tools import Tool
-# from langchain.utilities import GoogleSearchAPIWrapper
 import uuid
+import streamlit as st
+import pandas as pd
+from langchain.tools import Tool
 from langchain.output_parsers import ResponseSchema
+from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain.output_parsers import StructuredOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
@@ -18,14 +21,10 @@ from langchain.agents.agent_types import AgentType
 from contextlib import contextmanager
 
 
-import re
-import shutil
-import sys
-import tempfile
-import pathlib
-
 # import openai
 from openai import OpenAI
+
+
 
 client = OpenAI(
     api_key = os.environ.get("OPENAI_API_KEY"),
@@ -275,29 +274,34 @@ def main():
 
     if uploaded_file is not None:
         with tempdir() as base_dir:
-            file_extension = pathlib.Path(uploaded_file.name).suffix
-            unique_filename = str(uuid.uuid4()) + file_extension
-            uploads_folder = base_dir
-            os.makedirs(uploads_folder, exist_ok=True)  # Create 'uploads' folder if it doesn't exist
-            file_path = os.path.join(uploads_folder, unique_filename)
-            with open(file_path, 'wb') as f:
-                f.write(uploaded_file.getvalue())
+            try:
+                file_extension = pathlib.Path(uploaded_file.name).suffix
+                unique_filename = str(uuid.uuid4()) + file_extension
+                uploads_folder = base_dir
+                os.makedirs(uploads_folder, exist_ok=True)  # Create 'uploads' folder if it doesn't exist
+                file_path = os.path.join(uploads_folder, unique_filename)
+                with open(file_path, 'wb') as f:
+                    f.write(uploaded_file.getvalue())
 
-            if file_extension == '.csv':
-                df = pd.read_csv(uploaded_file)
-            elif file_extension == '.xlsx':
-                df = pd.read_excel(uploaded_file)
-            elif file_extension == '.json':
-                df = pd.read_json(uploaded_file)
-            elif file_extension == '.parquet':
-                df = pd.read_parquet(uploaded_file)
-            elif file_extension == '.h5':
-                df = pd.read_hdf(uploaded_file)
-            elif file_extension == '.feather':
-                df = pd.read_feather(uploaded_file)
-            elif file_extension == '.html':
-                dfs_html = pd.read_html(uploaded_file)
-                df = dfs_html[0]
+                if file_extension == '.csv':
+                    df = pd.read_csv(uploaded_file)
+                elif file_extension == '.xlsx':
+                    df = pd.read_excel(uploaded_file)
+                elif file_extension == '.json':
+                    df = pd.read_json(uploaded_file)
+                elif file_extension == '.parquet':
+                    df = pd.read_parquet(uploaded_file)
+                elif file_extension == '.h5':
+                    df = pd.read_hdf(uploaded_file)
+                elif file_extension == '.feather':
+                    df = pd.read_feather(uploaded_file)
+                elif file_extension == '.html':
+                    dfs_html = pd.read_html(uploaded_file)
+                    df = dfs_html[0]
+            except:
+                st.error("Error in uploaded file, pls try with different file..")
+                st.stop()
+
 
 
         if st.checkbox("Show top five records from uploaded file"):
@@ -308,42 +312,44 @@ def main():
                 }]))
 
 
-        # if st.checkbox(" 📊 Generate Graphs on uploaded Structured Data"):
-        #     column_names = ", ".join(df.columns)
-        #     # Check if the uploaded DataFrame is not empty
-        #     if not df.empty:
-        #         # Handle the OpenAI query and display results
-        #         handle_openai_query(df, column_names)
-        #     else:
-        #         # Display a warning if the uploaded data is empty
-        #         st.warning("The given data is empty.")
-
 
         if st.checkbox(" 📃  Generate a Comprehensive Analysis for uploaded Structured Data"):
             with st.spinner(text="Analysing document..."):
                 with st.expander('AI Suggested reports'):
-                    with st.spinner(text="Genertaing reports..."):  
-                        summary = get_spreadsheet_summary(df, summary_prompt)
-                        st.info(summary)
-                        st.success("Done!")
+                    with st.spinner(text="Genertaing reports..."):
+                        try:  
+                            summary = get_spreadsheet_summary(df, summary_prompt)
+                            st.info(summary)
+                            st.success("Done!")
+                        except:
+                            st.error("Please refresh the URL link and try again..")
+                            st.stop()
 
         if st.checkbox(" 📊 Generate Graphs on uploaded Structured Data"):
             column_names = ", ".join(df.columns)
-            # Check if the uploaded DataFrame is not empty
-            if not df.empty:
-                # Handle the OpenAI query and display results
-                handle_openai_query(df, column_names)
-            else:
-                # Display a warning if the uploaded data is empty
-                st.warning("The given data is empty.")
+            try:
+                # Check if the uploaded DataFrame is not empty
+                if not df.empty:
+                    # Handle the OpenAI query and display results
+                    handle_openai_query(df, column_names)
+                else:
+                    # Display a warning if the uploaded data is empty
+                    st.warning("The given data is empty.")
+            except:
+                st.error("Sorry I can't understand your request, Please reformat your query and submit it again..")
+                st.stop()
         
         if st.checkbox("👨‍💻 Chat with your uploaded Structured Data "):
             query = st.text_area("Insert your query")
             if st.button("Submit Query", type="primary"):
-                query = "using python_repl_ast, from the dataframe  " + query 
-                result = get_spreadsheet_summary(df, query)
-                st.info(result)
-                st.success("Done!")
+                try:
+                    query = "using python_repl_ast, from the dataframe  " + query 
+                    result = get_spreadsheet_summary(df, query)
+                    st.info(result)
+                    st.success("Done!")
+                except:
+                    st.error("Sorry I can't understand your request, Please reformat your query and submit it again..")
+                    st.stop()
 
     
 
