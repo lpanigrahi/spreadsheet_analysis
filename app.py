@@ -20,7 +20,25 @@ import matplotlib.pyplot as plt
 from langchain.agents.agent_types import AgentType
 from contextlib import contextmanager
 
+import streamlit as st
+import streamlit_authenticator as stauth
 
+import yaml
+from yaml.loader import SafeLoader
+
+st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_page_config(page_title="Scolo", page_icon=":moneybag:")
+
+with open('./config.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
+
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['pre-authorized']
+)
 # import openai
 from openai import OpenAI
 
@@ -101,7 +119,7 @@ def handle_openai_query(df, column_names):
             - Example code format ```code```
         
             - Colors to use for background and axes of the figure : #F0F0F6
-            - Try to use the following color palette for coloring the plots : #8f63ee #ced5ce #a27bf6 #3d3b41
+            - Try to use the following color palette for coloring the plots : ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
             
             """
 
@@ -238,120 +256,127 @@ summary_prompt = """"using python tool,do a detailed analysis of this dataframe,
 
 def main():
 
-    st.set_option('deprecation.showPyplotGlobalUse', False)
-    st.set_page_config(page_title="Scolo", page_icon=":moneybag:")
-    st.markdown("""
-        <style>
-        .subtitle {
-            font-size: 20px;
-            color: #555555;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-    st.header("🦜🔗 AI Structured Data Analyst")
-    st.markdown('<p class="subtitle">Upload a structured data file with any of the following extensions:[ .xlsx, .csv, .json, .parquet, .h5, .feather, .html ] . For optimal results, \
-                the first line should be a header record. For Excel files, the current version of the app only supports single sheet. \
-                Rest assured, your documents are read locally on your device, ensuring strict privacy compliance.\
-                For better performance pls select one option at a time.</p>', unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Choose any file having extension  .xlsx, .csv, .json, .parquet, .h5, .feather, .html")
+    authenticator.login()
+    if st.session_state["authentication_status"]:
+        authenticator.logout()
+        st.write(f'Welcome *{st.session_state["name"]}*')
 
-    if "rerun_counter" not in st.session_state:
-        st.session_state.rerun_counter = 0  
+        st.markdown("""
+            <style>
+            .subtitle {
+                font-size: 20px;
+                color: #555555;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+        st.header("🦜🔗 AI Structured Data Analyst")
+        st.markdown('<p class="subtitle">Upload a structured data file with any of the following extensions:[ .xlsx, .csv, .json, .parquet, .h5, .feather, .html ] . For optimal results, \
+                    the first line should be a header record. For Excel files, the current version of the app only supports single sheet. \
+                    Rest assured, your documents are read locally on your device, ensuring strict privacy compliance.\
+                    For better performance pls select one option at a time.</p>', unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Choose any file having extension  .xlsx, .csv, .json, .parquet, .h5, .feather, .html")
+
+        if "rerun_counter" not in st.session_state:
+            st.session_state.rerun_counter = 0  
 
 
-    @contextmanager
-    def tempdir():
-        path = tempfile.mkdtemp()
-        try:
-            yield path
-        finally:
+        @contextmanager
+        def tempdir():
+            path = tempfile.mkdtemp()
             try:
-                shutil.rmtree(path)
-            except IOError:
-                sys.stderr.write('Failed to clean up temp dir {}'.format(path))
-
-
-
-    if uploaded_file is not None:
-        with tempdir() as base_dir:
-            try:
-                file_extension = pathlib.Path(uploaded_file.name).suffix
-                unique_filename = str(uuid.uuid4()) + file_extension
-                uploads_folder = base_dir
-                os.makedirs(uploads_folder, exist_ok=True)  # Create 'uploads' folder if it doesn't exist
-                file_path = os.path.join(uploads_folder, unique_filename)
-                with open(file_path, 'wb') as f:
-                    f.write(uploaded_file.getvalue())
-
-                if file_extension == '.csv':
-                    df = pd.read_csv(uploaded_file)
-                elif file_extension == '.xlsx':
-                    df = pd.read_excel(uploaded_file)
-                elif file_extension == '.json':
-                    df = pd.read_json(uploaded_file)
-                elif file_extension == '.parquet':
-                    df = pd.read_parquet(uploaded_file)
-                elif file_extension == '.h5':
-                    df = pd.read_hdf(uploaded_file)
-                elif file_extension == '.feather':
-                    df = pd.read_feather(uploaded_file)
-                elif file_extension == '.html':
-                    dfs_html = pd.read_html(uploaded_file)
-                    df = dfs_html[0]
-            except:
-                st.error("Error in uploaded file, pls try with different file..")
-                st.stop()
-
-
-
-        if st.checkbox("Show top five records from uploaded file"):
-            with st.expander('Data'):
-                st.table(df.head(5).style.set_properties(**{'text-align': 'center'}).set_table_styles([{
-                    'selector': 'th',
-                    'props': [('text-align', 'center')]
-                }]))
-
-
-
-        if st.checkbox(" 📃  Generate a Comprehensive Analysis for uploaded Structured Data"):
-            with st.spinner(text="Analysing document..."):
-                with st.expander('AI Suggested reports'):
-                    with st.spinner(text="Genertaing reports..."):
-                        try:  
-                            summary = get_spreadsheet_summary(df, summary_prompt)
-                            st.info(summary)
-                            st.success("Done!")
-                        except:
-                            st.error("Please refresh the URL link and try again..")
-                            st.stop()
-
-        if st.checkbox(" 📊 Generate Graphs on uploaded Structured Data"):
-            column_names = ", ".join(df.columns)
-            try:
-                # Check if the uploaded DataFrame is not empty
-                if not df.empty:
-                    # Handle the OpenAI query and display results
-                    handle_openai_query(df, column_names)
-                else:
-                    # Display a warning if the uploaded data is empty
-                    st.warning("The given data is empty.")
-            except:
-                st.error("Sorry I can't understand your request, Please reformat your query and submit it again..")
-                st.stop()
-        
-        if st.checkbox("👨‍💻 Chat with your uploaded Structured Data "):
-            query = st.text_area("Insert your query")
-            if st.button("Submit Query", type="primary"):
+                yield path
+            finally:
                 try:
-                    query = "using python_repl_ast, from the dataframe  " + query 
-                    result = get_spreadsheet_summary(df, query)
-                    st.info(result)
-                    st.success("Done!")
+                    shutil.rmtree(path)
+                except IOError:
+                    sys.stderr.write('Failed to clean up temp dir {}'.format(path))
+
+
+
+        if uploaded_file is not None:
+            with tempdir() as base_dir:
+                try:
+                    file_extension = pathlib.Path(uploaded_file.name).suffix
+                    unique_filename = str(uuid.uuid4()) + file_extension
+                    uploads_folder = base_dir
+                    os.makedirs(uploads_folder, exist_ok=True)  # Create 'uploads' folder if it doesn't exist
+                    file_path = os.path.join(uploads_folder, unique_filename)
+                    with open(file_path, 'wb') as f:
+                        f.write(uploaded_file.getvalue())
+
+                    if file_extension == '.csv':
+                        df = pd.read_csv(uploaded_file)
+                    elif file_extension == '.xlsx':
+                        df = pd.read_excel(uploaded_file)
+                    elif file_extension == '.json':
+                        df = pd.read_json(uploaded_file)
+                    elif file_extension == '.parquet':
+                        df = pd.read_parquet(uploaded_file)
+                    elif file_extension == '.h5':
+                        df = pd.read_hdf(uploaded_file)
+                    elif file_extension == '.feather':
+                        df = pd.read_feather(uploaded_file)
+                    elif file_extension == '.html':
+                        dfs_html = pd.read_html(uploaded_file)
+                        df = dfs_html[0]
+                except:
+                    st.error("Error in uploaded file, pls try with different file..")
+                    st.stop()
+
+
+
+            if st.checkbox("Show top five records from uploaded file"):
+                with st.expander('Data'):
+                    st.table(df.head(5).style.set_properties(**{'text-align': 'center'}).set_table_styles([{
+                        'selector': 'th',
+                        'props': [('text-align', 'center')]
+                    }]))
+
+
+
+            if st.checkbox(" 📃  Generate a Comprehensive Analysis for uploaded Structured Data"):
+                with st.spinner(text="Analysing document..."):
+                    with st.expander('AI Suggested reports'):
+                        with st.spinner(text="Genertaing reports..."):
+                            try:  
+                                summary = get_spreadsheet_summary(df, summary_prompt)
+                                st.info(summary)
+                                st.success("Done!")
+                            except:
+                                st.error("Please refresh the URL link and try again..")
+                                st.stop()
+
+            if st.checkbox(" 📊 Generate Graphs on uploaded Structured Data"):
+                column_names = ", ".join(df.columns)
+                try:
+                    # Check if the uploaded DataFrame is not empty
+                    if not df.empty:
+                        # Handle the OpenAI query and display results
+                        handle_openai_query(df, column_names)
+                    else:
+                        # Display a warning if the uploaded data is empty
+                        st.warning("The given data is empty.")
                 except:
                     st.error("Sorry I can't understand your request, Please reformat your query and submit it again..")
                     st.stop()
+            
+            if st.checkbox("👨‍💻 Chat with your uploaded Structured Data "):
+                query = st.text_area("Insert your query")
+                if st.button("Submit Query", type="primary"):
+                    try:
+                        # query = "using python_repl_ast, from the dataframe  " + query + " avoid programming code as output"
+                        query = "using python_repl_ast, from the dataframe  " + query 
+                        result = get_spreadsheet_summary(df, query)
+                        st.info(result)
+                        st.success("Done!")
+                    except:
+                        st.error("Sorry I can't understand your request, Please reformat your query and submit it again..")
+                        st.stop()
 
-    
+    elif st.session_state["authentication_status"] is False:
+        st.error('Username/password is incorrect')
+    elif st.session_state["authentication_status"] is None:
+        st.warning('Please enter your username and password')
 
 if __name__ == "__main__":
     main()
